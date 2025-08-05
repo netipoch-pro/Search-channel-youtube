@@ -4,13 +4,6 @@ const API_KEY = 'AIzaSyAoEKfwfjZAVh1NCdDVwn-k738oT6SRg7U'; // <-- แก้ไ�
 // 📌 กำหนด Channel ID ที่ต้องการค้นหาเฉพาะช่องนี้
 const CHANNEL_ID = 'UCmi-SqNGuFt2Ie7YbqQ9cgQ'; // <-- ใส่ Channel ID ที่ต้องการตรงนี้
 
-// ถ้าต้องการค้นหาหลายช่อง สามารถใช้ array
-// const CHANNEL_IDS = [
-//     'UCmi-SqNGuFt2Ie7YbqQ9cgQ',
-//     'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-//     'UCYfdidRxbB8Qhf0Nx7ioOYw'
-// ];
-
 // Store pagination tokens
 let nextPageToken = '';
 let prevPageToken = '';
@@ -28,58 +21,27 @@ const resultsCountDiv = document.getElementById('resultsCount');
 // Event Listeners
 searchForm.addEventListener('submit', handleSearch);
 
-// Check configuration on load
+// Check API Key on load
 window.addEventListener('load', () => {
-    // Check API Key
     if (API_KEY === 'YOUR_API_KEY_HERE') {
         showError('⚠️ กรุณาแก้ไข API_KEY ในไฟล์ app.js ก่อนใช้งาน');
         
+        // แสดงวิธีการขอ API Key
         const instructionDiv = document.createElement('div');
         instructionDiv.className = 'api-instructions';
         instructionDiv.innerHTML = `
-            <h3>วิธีการตั้งค่า:</h3>
+            <h3>วิธีการขอ YouTube API Key:</h3>
             <ol>
-                <li><strong>API Key:</strong> ไปที่ <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a> → เปิด YouTube Data API v3 → สร้าง API Key</li>
-                <li><strong>Channel ID:</strong> ไปที่ช่อง YouTube → About → Share channel → Copy channel ID</li>
-                <li>แก้ไขทั้ง API_KEY และ CHANNEL_ID ในไฟล์ app.js</li>
+                <li>ไปที่ <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                <li>สร้างโปรเจคใหม่หรือเลือกโปรเจคที่มีอยู่</li>
+                <li>เปิดใช้งาน YouTube Data API v3</li>
+                <li>ไปที่ Credentials และสร้าง API Key</li>
+                <li>คัดลอก API Key มาใส่ในไฟล์ app.js แทนที่ YOUR_API_KEY_HERE</li>
             </ol>
         `;
         errorDiv.appendChild(instructionDiv);
     }
-    
-    // Show current channel info
-    if (CHANNEL_ID && API_KEY !== 'YOUR_API_KEY_HERE') {
-        getChannelInfo();
-    }
 });
-
-async function getChannelInfo() {
-    try {
-        const response = await fetch(
-            `https://www.googleapis.com/youtube/v3/channels?` +
-            `part=snippet&id=${CHANNEL_ID}&key=${API_KEY}`
-        );
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.items && data.items.length > 0) {
-                const channel = data.items[0].snippet;
-                const channelInfoDiv = document.createElement('div');
-                channelInfoDiv.className = 'channel-info';
-                channelInfoDiv.innerHTML = `
-                    <img src="${channel.thumbnails.default.url}" alt="${channel.title}">
-                    <div>
-                        <h3>กำลังค้นหาในช่อง: ${channel.title}</h3>
-                        <p>${channel.description.substring(0, 100)}...</p>
-                    </div>
-                `;
-                document.querySelector('.header').appendChild(channelInfoDiv);
-            }
-        }
-    } catch (error) {
-        console.error('Error fetching channel info:', error);
-    }
-}
 
 async function handleSearch(e) {
     e.preventDefault();
@@ -89,25 +51,24 @@ async function handleSearch(e) {
         return;
     }
     
-    if (!CHANNEL_ID) {
-        showError('กรุณาใส่ Channel ID ในไฟล์ app.js ก่อน');
-        return;
-    }
-    
     // Get form values
+    const searchType = document.getElementById('searchType').value;
+    const channelInput = document.getElementById('channelInput').value.trim();
     const keyword = document.getElementById('keyword').value.trim();
     const maxResults = document.getElementById('maxResults').value;
     const order = document.getElementById('order').value;
     const publishedAfter = document.getElementById('publishedAfter').value;
     
     // Validation
-    if (!keyword) {
-        showError('กรุณากรอกคีย์เวิร์ดที่ต้องการค้นหา');
+    if (!channelInput || !keyword) {
+        showError('กรุณากรอกข้อมูลให้ครบถ้วน');
         return;
     }
     
     // Save search params
     currentSearchParams = {
+        searchType,
+        channelInput,
         keyword,
         maxResults,
         order,
@@ -127,11 +88,26 @@ async function searchVideos(pageToken = '') {
     hideError();
     
     try {
+        let channelId = '';
+        
+        // Get channel ID
+        if (currentSearchParams.searchType === 'channelId') {
+            channelId = currentSearchParams.channelInput;
+        } else {
+            // Search for channel by name
+            const channelData = await searchChannel(currentSearchParams.channelInput);
+            if (!channelData) {
+                throw new Error('ไม่พบช่องที่ค้นหา: ' + currentSearchParams.channelInput);
+            }
+            channelId = channelData.id;
+            console.log('Found channel:', channelData.title, 'ID:', channelId);
+        }
+        
         // Build search URL
         const params = new URLSearchParams({
             part: 'snippet',
             type: 'video',
-            channelId: CHANNEL_ID, // ใช้ Channel ID ที่กำหนดไว้
+            channelId: channelId,
             q: currentSearchParams.keyword,
             maxResults: currentSearchParams.maxResults,
             order: currentSearchParams.order,
@@ -148,13 +124,14 @@ async function searchVideos(pageToken = '') {
         }
         
         // Make API request
-        console.log('Searching videos in channel:', CHANNEL_ID);
+        console.log('Searching videos with params:', params.toString());
         const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
         
         if (!response.ok) {
             const error = await response.json();
             console.error('API Error:', error);
             
+            // จัดการ error ที่เจอบ่อย
             if (error.error?.code === 403) {
                 throw new Error('API Key ไม่ถูกต้อง หรือไม่ได้เปิดใช้งาน YouTube Data API v3');
             } else if (error.error?.code === 400) {
@@ -188,6 +165,36 @@ async function searchVideos(pageToken = '') {
     } finally {
         hideLoading();
     }
+}
+
+async function searchChannel(channelName) {
+    const params = new URLSearchParams({
+        part: 'snippet',
+        type: 'channel',
+        q: channelName,
+        maxResults: 1,
+        key: API_KEY
+    });
+    
+    console.log('Searching for channel:', channelName);
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+    
+    if (!response.ok) {
+        console.error('Channel search failed');
+        return null;
+    }
+    
+    const data = await response.json();
+    console.log('Channel search results:', data);
+    
+    if (data.items && data.items.length > 0) {
+        return {
+            id: data.items[0].id.channelId,
+            title: data.items[0].snippet.title
+        };
+    }
+    
+    return null;
 }
 
 function displayResults(videos) {
@@ -280,7 +287,7 @@ window.searchVideosPage = function(pageToken) {
     searchVideos(pageToken);
 };
 
-// Add styles
+// Add styles for API instructions
 const style = document.createElement('style');
 style.textContent = `
     .api-instructions {
@@ -306,30 +313,6 @@ style.textContent = `
     }
     .api-instructions a:hover {
         text-decoration: underline;
-    }
-    .channel-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-top: 20px;
-        padding: 15px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 10px;
-        color: white;
-    }
-    .channel-info img {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-    }
-    .channel-info h3 {
-        margin: 0 0 5px 0;
-        font-size: 1.1em;
-    }
-    .channel-info p {
-        margin: 0;
-        font-size: 0.9em;
-        opacity: 0.9;
     }
 `;
 document.head.appendChild(style);
