@@ -1,9 +1,6 @@
 // ⚠️ สำคัญ: ต้องใส่ YouTube API Key ของคุณเอง
 const API_KEY = 'AIzaSyAoEKfwfjZAVh1NCdDVwn-k738oT6SRg7U'; // <-- แก้ไขตรงนี้
 
-// 📌 กำหนด Channel ID ที่ต้องการค้นหาเฉพาะช่องนี้
-const CHANNEL_ID = 'UCmi-SqNGuFt2Ie7YbqQ9cgQ'; // <-- ใส่ Channel ID ที่ต้องการตรงนี้
-
 // Store pagination tokens
 let nextPageToken = '';
 let prevPageToken = '';
