@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ค้นหาคลิป YouTube Channel</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <h1>🎬 ค้นหาคลิป YouTube</h1>
+      <p class="subtitle">ค้นหาวิดีโอในช่อง YouTube ด้วยคีย์เวิร์ดที่คุณต้องการ</p>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+      <form id="searchForm" class="search-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="searchType">ประเภทการค้นหา:</label>
+            <select id="searchType">
+              <option value="channelId">Channel ID</option>
+              <option value="channelName">ชื่อช่อง</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="channelInput">ช่อง YouTube:</label>
+            <input type="text" id="channelInput" placeholder="กรอก Channel ID หรือชื่อช่อง" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="keyword">คีย์เวิร์ดที่ต้องการค้นหา:</label>
+            <input type="text" id="keyword" placeholder="เช่น: tutorial, review, gameplay" required>
+          </div>
+          <div class="form-group">
+            <label for="maxResults">จำนวนผลลัพธ์:</label>
+            <select id="maxResults">
+              <option value="10">10 วิดีโอ</option>
+              <option value="25">25 วิดีโอ</option>
+              <option value="50">50 วิดีโอ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="order">เรียงลำดับตาม:</label>
+            <select id="order">
+              <option value="relevance">ความเกี่ยวข้อง</option>
+              <option value="date">วันที่อัปโหลด</option>
+              <option value="viewCount">จำนวนการดู</option>
+              <option value="rating">คะแนน</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="publishedAfter">อัปโหลดหลังจาก:</label>
+            <input type="date" id="publishedAfter">
+          </div>
+        </div>
+
+        <button type="submit" class="search-btn">🔍 ค้นหาวิดีโอ</button>
+      </form>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="results-section" style="display: none;">
+      <div class="results-header">
+        <h2>ผลการค้นหา</h2>
+        <div class="results-count" id="resultsCount"></div>
+      </div>
+      <div id="results" class="video-grid"></div>
+      <div id="pagination" class="pagination"></div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading" style="display: none;">
+      กำลังค้นหาวิดีโอ...
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
