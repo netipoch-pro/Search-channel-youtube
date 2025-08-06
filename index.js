@@ -196,3 +196,15 @@ app.listen(PORT, () => {
         console.log('✅ YouTube API Key is configured');
     }
 });
+// เพิ่มใน index.js
+app.use(express.static('public'));
+
+// Serve manifest.json
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
+// Serve service worker
+app.get('/service-worker.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'service-worker.js'));
+});

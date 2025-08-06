@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ค้นหาคลิป YouTube - PAC Academic Center</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="ค้นหาวิดีโอ YouTube จากช่อง PAC Academic Center">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PAC YouTube">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-192.png">
+    
     <style>
         * {
             margin: 0;
@@ -19,6 +34,45 @@
             flex-direction: column;
             align-items: center;
             padding: 20px;
+        }
+
+        .install-banner {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 90%;
+            animation: slideUp 0.5s ease;
+        }
+
+        .install-banner.show {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .install-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .install-dismiss {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
         }
 
         .header {
@@ -101,10 +155,6 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        input[type="text"]::placeholder {
-            color: #999;
-        }
-
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -132,10 +182,6 @@
         .search-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .search-btn:active {
-            transform: translateY(0);
         }
 
         .results-container {
@@ -197,47 +243,6 @@
             line-height: 1.4;
         }
 
-        .video-channel {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-
-        .video-meta {
-            color: #999;
-            font-size: 13px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 30px;
-        }
-
-        .page-btn {
-            padding: 10px 20px;
-            background: white;
-            border: 2px solid #667eea;
-            color: #667eea;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .page-btn:hover:not(:disabled) {
-            background: #667eea;
-            color: white;
-        }
-
-        .page-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         .loading {
             text-align: center;
             padding: 40px;
@@ -253,6 +258,23 @@
             height: 40px;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
+        }
+
+        .offline-notice {
+            background: #f39c12;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            display: none;
+        }
+
+        .offline-notice.show {
+            display: block;
         }
 
         @keyframes spin {
@@ -296,6 +318,18 @@
     </style>
 </head>
 <body>
+    <!-- Offline Notice -->
+    <div id="offlineNotice" class="offline-notice">
+        ⚠️ คุณกำลังออฟไลน์ - บางฟังก์ชันอาจไม่สามารถใช้งานได้
+    </div>
+
+    <!-- Install Banner -->
+    <div id="installBanner" class="install-banner">
+        <span>📱 ติดตั้งแอปบนอุปกรณ์ของคุณ</span>
+        <button id="installBtn" class="install-btn">ติดตั้ง</button>
+        <button id="dismissBtn" class="install-dismiss">ไว้ทีหลัง</button>
+    </div>
+
     <div class="header">
         <h1>
             <span class="video-icon">🎬</span>
@@ -347,132 +381,71 @@
 
     <div id="results" class="results-container"></div>
 
+    <script src="app.js"></script>
     <script>
-        // Configuration
-        const CONFIG = {
-            CHANNEL_ID: 'UCmi-SqNGuFt2le7YbqQ9cgQ', // PAC Academic Center Channel ID
-            API_ENDPOINT: '/api/search'
-        };
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
 
-        let currentPageToken = '';
-        let nextPageToken = '';
-        let prevPageToken = '';
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installBtn');
+        const dismissBtn = document.getElementById('dismissBtn');
 
-        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            await searchVideos();
+            deferredPrompt = e;
+            
+            // Show install banner
+            installBanner.classList.add('show');
         });
 
-        async function searchVideos(pageToken = '') {
-            const keyword = document.getElementById('keyword').value;
-            const maxResults = document.getElementById('maxResults').value;
-            const order = document.getElementById('order').value;
-            const publishedAfter = document.getElementById('publishedAfter').value;
-
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div>กำลังค้นหาวิดีโอ...</div>';
-
-            try {
-                const response = await fetch(CONFIG.API_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        searchType: 'channelId',
-                        channelInput: CONFIG.CHANNEL_ID,
-                        keyword: keyword,
-                        maxResults: parseInt(maxResults),
-                        order: order,
-                        publishedAfter: publishedAfter || undefined,
-                        pageToken: pageToken
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch videos');
-                }
-
-                const data = await response.json();
-                displayResults(data);
-                
-                nextPageToken = data.nextPageToken || '';
-                prevPageToken = data.prevPageToken || '';
-                
-            } catch (error) {
-                console.error('Error:', error);
-                resultsDiv.innerHTML = `
-                    <div style="text-align: center; color: white; padding: 40px;">
-                        <h3>เกิดข้อผิดพลาด</h3>
-                        <p>${error.message}</p>
-                        <p style="margin-top: 10px; opacity: 0.8;">กรุณาตรวจสอบการเชื่อมต่อและลองใหม่อีกครั้ง</p>
-                    </div>
-                `;
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                deferredPrompt = null;
+                installBanner.classList.remove('show');
             }
-        }
+        });
 
-        function displayResults(data) {
-            const resultsDiv = document.getElementById('results');
-            
-            if (!data.items || data.items.length === 0) {
-                resultsDiv.innerHTML = `
-                    <div style="text-align: center; color: white; padding: 40px;">
-                        <h3>ไม่พบวิดีโอ</h3>
-                        <p>ลองเปลี่ยนคีย์เวิร์ดหรือตัวกรองการค้นหา</p>
-                    </div>
-                `;
-                return;
-            }
+        dismissBtn.addEventListener('click', () => {
+            installBanner.classList.remove('show');
+        });
 
-            let html = `
-                <div class="results-info">
-                    <span>พบวิดีโอทั้งหมด ${data.pageInfo?.totalResults || data.items.length} รายการ</span>
-                    <span>แสดง ${data.items.length} รายการ</span>
-                </div>
-                <div class="video-grid">
-            `;
+        // Check if app is installed
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            installBanner.classList.remove('show');
+        });
 
-            data.items.forEach(item => {
-                const videoId = typeof item.id === 'object' ? item.id.videoId : item.id;
-                const thumbnail = item.snippet.thumbnails.medium.url;
-                const title = item.snippet.title;
-                const channelTitle = item.snippet.channelTitle;
-                const publishedAt = new Date(item.snippet.publishedAt).toLocaleDateString('th-TH');
-                
-                html += `
-                    <div class="video-card" onclick="window.open('https://www.youtube.com/watch?v=${videoId}', '_blank')">
-                        <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
-                        <div class="video-info">
-                            <div class="video-title">${title}</div>
-                            <div class="video-channel">${channelTitle}</div>
-                            <div class="video-meta">
-                                <span>📅 ${publishedAt}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+        // Offline/Online detection
+        const offlineNotice = document.getElementById('offlineNotice');
+        
+        window.addEventListener('online', () => {
+            offlineNotice.classList.remove('show');
+        });
 
-            html += '</div>';
+        window.addEventListener('offline', () => {
+            offlineNotice.classList.add('show');
+        });
 
-            // Add pagination
-            if (nextPageToken || prevPageToken) {
-                html += '<div class="pagination">';
-                if (prevPageToken) {
-                    html += `<button class="page-btn" onclick="searchVideos('${prevPageToken}')">← หน้าก่อน</button>`;
-                }
-                if (nextPageToken) {
-                    html += `<button class="page-btn" onclick="searchVideos('${nextPageToken}')">หน้าถัดไป →</button>`;
-                }
-                html += '</div>';
-            }
-
-            resultsDiv.innerHTML = html;
-        }
-
-        // Format number with commas
-        function formatNumber(num) {
-            return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0';
+        // Check for URL parameters (for shortcuts)
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchQuery = urlParams.get('search');
+        if (searchQuery) {
+            document.getElementById('keyword').value = searchQuery;
         }
     </script>
 </body>
