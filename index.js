@@ -1,270 +1,198 @@
 const express = require('express');
+const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
+require('dotenv').config();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
-// Environment configuration
-require('dotenv').config();
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || 'YOUR_YOUTUBE_API_KEY';
-
-// Logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
-
-// YouTube API helper functions
-class YouTubeAPI {
-  constructor(apiKey) {
-    this.apiKey = apiKey;
-    this.baseURL = 'https://www.googleapis.com/youtube/v3';
-  }
-
-  async searchChannelByName(channelName) {
+// Main search endpoint
+app.post('/api/search', async (req, res) => {
     try {
-      const response = await axios.get(`${this.baseURL}/search`, {
-        params: {
-          part: 'snippet',
-          q: channelName,
-          type: 'channel',
-          maxResults: 1,
-          key: this.apiKey
+        // Check if API key exists
+        if (!process.env.YOUTUBE_API_KEY) {
+            return res.status(500).json({ 
+                error: 'YouTube API Key not configured. Please add YOUTUBE_API_KEY to .env file' 
+            });
         }
-      });
 
-      if (response.data.items && response.data.items.length > 0) {
-        return response.data.items[0].snippet.channelId;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error searching channel by name:', error.message);
-      throw new Error('ไม่สามารถค้นหาช่องได้');
-    }
-  }
+        const { 
+            searchType, 
+            channelInput, 
+            keyword, 
+            maxResults, 
+            order, 
+            publishedAfter, 
+            pageToken 
+        } = req.body;
 
-  async searchVideos(params) {
-    try {
-      const searchParams = {
-        part: 'snippet',
-        type: 'video',
-        key: this.apiKey,
-        ...params
-      };
-
-      const response = await axios.get(`${this.baseURL}/search`, {
-        params: searchParams
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Error searching videos:', error.message);
-      if (error.response?.status === 403) {
-        throw new Error('API key ไม่ถูกต้องหรือเกินโควต้าการใช้งาน');
-      } else if (error.response?.status === 400) {
-        throw new Error('พารามิเตอร์การค้นหาไม่ถูกต้อง');
-      }
-      throw new Error('เกิดข้อผิดพลาดในการค้นหาวิดีโอ');
-    }
-  }
-
-  async getVideoDetails(videoIds) {
-    try {
-      const response = await axios.get(`${this.baseURL}/videos`, {
-        params: {
-          part: 'contentDetails,statistics',
-          id: videoIds.join(','),
-          key: this.apiKey
-        }
-      });
-
-      return response.data.items;
-    } catch (error) {
-      console.error('Error getting video details:', error.message);
-      return [];
-    }
-  }
-}
-
-const youtubeAPI = new YouTubeAPI(YOUTUBE_API_KEY);
-
-// Routes
-app.post('/search', async (req, res) => {
-  try {
-    const {
-      searchType,
-      channelInput,
-      keyword,
-      maxResults = 10,
-      order = 'relevance',
-      publishedAfter,
-      pageToken
-    } = req.body;
-
-    // Validate input
-    if (!channelInput || !keyword) {
-      return res.status(400).json({
-        error: 'กรุณากรอกข้อมูลช่องและคีย์เวิร์ดให้ครบถ้วน'
-      });
-    }
-
-    // Check API key
-    if (YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
-      return res.status(500).json({
-        error: 'กรุณาตั้งค่า YouTube API key ในไฟล์ .env'
-      });
-    }
-
-    let channelId = channelInput;
-
-    // ถ้าเป็นการค้นหาด้วยชื่อช่อง ให้แปลงเป็น Channel ID ก่อน
-    if (searchType === 'channelName') {
-      console.log(`Searching for channel: ${channelInput}`);
-      channelId = await youtubeAPI.searchChannelByName(channelInput);
-      
-      if (!channelId) {
-        return res.status(404).json({
-          error: `ไม่พบช่อง "${channelInput}" กรุณาตรวจสอบชื่อช่องอีกครั้ง`
+        console.log('Search request:', {
+            channelInput,
+            keyword,
+            maxResults,
+            order
         });
-      }
-      console.log(`Found channel ID: ${channelId}`);
+
+        // Build YouTube API parameters
+        const params = {
+            part: 'snippet',
+            q: keyword,
+            maxResults: maxResults || 10,
+            order: order || 'relevance',
+            type: 'video',
+            key: process.env.YOUTUBE_API_KEY
+        };
+
+        // Add channel filter
+        if (searchType === 'channelId') {
+            params.channelId = channelInput;
+        } else if (searchType === 'channelName') {
+            // First, search for the channel
+            const channelSearchParams = {
+                part: 'snippet',
+                q: channelInput,
+                type: 'channel',
+                maxResults: 1,
+                key: process.env.YOUTUBE_API_KEY
+            };
+
+            try {
+                const channelResponse = await axios.get(
+                    'https://www.googleapis.com/youtube/v3/search',
+                    { params: channelSearchParams }
+                );
+
+                if (channelResponse.data.items && channelResponse.data.items.length > 0) {
+                    params.channelId = channelResponse.data.items[0].id.channelId;
+                } else {
+                    return res.status(404).json({ error: 'Channel not found' });
+                }
+            } catch (channelError) {
+                console.error('Channel search error:', channelError.response?.data || channelError.message);
+                return res.status(500).json({ 
+                    error: 'Failed to find channel: ' + (channelError.response?.data?.error?.message || channelError.message)
+                });
+            }
+        }
+
+        // Add optional parameters
+        if (publishedAfter) {
+            params.publishedAfter = new Date(publishedAfter).toISOString();
+        }
+
+        if (pageToken) {
+            params.pageToken = pageToken;
+        }
+
+        // Make the API request to YouTube
+        console.log('Searching YouTube with params:', params);
+        
+        const response = await axios.get(
+            'https://www.googleapis.com/youtube/v3/search',
+            { params }
+        );
+
+        console.log(`Found ${response.data.items.length} videos`);
+        
+        res.json(response.data);
+
+    } catch (error) {
+        console.error('Search error:', error.response?.data || error.message);
+        
+        // Handle specific YouTube API errors
+        if (error.response?.status === 403) {
+            res.status(403).json({ 
+                error: 'YouTube API quota exceeded or API key invalid. Please check your API key and quota.' 
+            });
+        } else if (error.response?.status === 400) {
+            res.status(400).json({ 
+                error: 'Invalid request parameters: ' + (error.response?.data?.error?.message || 'Unknown error')
+            });
+        } else {
+            res.status(500).json({ 
+                error: error.response?.data?.error?.message || 'Server error occurred'
+            });
+        }
     }
-
-    // สร้างพารามิเตอร์สำหรับการค้นหา
-    const searchParams = {
-      q: keyword,
-      channelId: channelId,
-      maxResults: Math.min(parseInt(maxResults), 50), // จำกัดไม่เกิน 50
-      order: order
-    };
-
-    // เพิ่มตัวกรองวันที่ถ้ามี
-    if (publishedAfter) {
-      searchParams.publishedAfter = new Date(publishedAfter).toISOString();
-    }
-
-    // เพิ่ม page token สำหรับ pagination
-    if (pageToken) {
-      searchParams.pageToken = pageToken;
-    }
-
-    console.log('Search parameters:', searchParams);
-
-    // ค้นหาวิดีโอ
-    const searchResults = await youtubeAPI.searchVideos(searchParams);
-
-    if (!searchResults.items || searchResults.items.length === 0) {
-      return res.json({
-        items: [],
-        pageInfo: { totalResults: 0 },
-        message: 'ไม่พบวิดีโอที่ตรงกับเงื่อนไขการค้นหา'
-      });
-    }
-
-    // ดึงข้อมูลเพิ่มเติมของวิดีโอ (duration, view count, etc.)
-    const videoIds = searchResults.items.map(item => item.id.videoId);
-    const videoDetails = await youtubeAPI.getVideoDetails(videoIds);
-
-    // รวมข้อมูล
-    const enhancedResults = searchResults.items.map(item => {
-      const details = videoDetails.find(detail => detail.id === item.id.videoId);
-      return {
-        ...item,
-        contentDetails: details?.contentDetails,
-        statistics: details?.statistics
-      };
-    });
-
-    // ส่งผลลัพธ์
-    res.json({
-      items: enhancedResults,
-      nextPageToken: searchResults.nextPageToken,
-      prevPageToken: searchResults.prevPageToken,
-      pageInfo: searchResults.pageInfo,
-      searchInfo: {
-        channelId,
-        channelName: channelInput,
-        keyword,
-        totalResults: searchResults.pageInfo.totalResults
-      }
-    });
-
-  } catch (error) {
-    console.error('Search error:', error);
-    res.status(500).json({
-      error: error.message || 'เกิดข้อผิดพลาดในการค้นหา'
-    });
-  }
 });
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    apiKeyConfigured: YOUTUBE_API_KEY !== 'YOUR_YOUTUBE_API_KEY'
-  });
+    res.json({ 
+        status: 'OK', 
+        message: 'Server is running',
+        apiKeyConfigured: !!process.env.YOUTUBE_API_KEY,
+        timestamp: new Date().toISOString()
+    });
 });
 
-// API info endpoint
-app.get('/api/info', (req, res) => {
-  res.json({
-    name: 'YouTube Search API',
-    version: '2.0.0',
-    features: [
-      'Search by channel name or ID',
-      'Advanced filtering options',
-      'Pagination support',
-      'Video details integration'
-    ],
-    endpoints: {
-      '/search': 'POST - Search for videos',
-      '/health': 'GET - Health check',
-      '/api/info': 'GET - API information'
+// Test API key endpoint
+app.get('/api/test', async (req, res) => {
+    try {
+        if (!process.env.YOUTUBE_API_KEY) {
+            return res.status(500).json({ 
+                error: 'YouTube API Key not configured',
+                solution: 'Please add YOUTUBE_API_KEY to .env file'
+            });
+        }
+
+        // Test the API key with a simple request
+        const response = await axios.get(
+            'https://www.googleapis.com/youtube/v3/search',
+            {
+                params: {
+                    part: 'snippet',
+                    q: 'test',
+                    maxResults: 1,
+                    key: process.env.YOUTUBE_API_KEY
+                }
+            }
+        );
+
+        res.json({ 
+            status: 'OK',
+            message: 'API Key is valid and working',
+            quota: 'API quota is available'
+        });
+
+    } catch (error) {
+        console.error('API test error:', error.response?.data || error.message);
+        
+        if (error.response?.status === 403) {
+            res.status(403).json({ 
+                error: 'API Key is invalid or quota exceeded',
+                details: error.response?.data?.error?.message
+            });
+        } else {
+            res.status(500).json({ 
+                error: 'Failed to test API',
+                details: error.response?.data?.error?.message || error.message
+            });
+        }
     }
-  });
-});
-
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({
-    error: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์'
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'ไม่พบหน้าที่ต้องการ'
-  });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`📋 API info: http://localhost:${PORT}/api/info`);
-  
-  if (YOUTUBE_API_KEY === 'YOUR_YOUTUBE_API_KEY') {
-    console.log('⚠️  Warning: Please set your YouTube API key in .env file');
-    console.log('   Create .env file with: YOUTUBE_API_KEY=your_api_key_here');
-  } else {
-    console.log('✅ YouTube API key configured');
-  }
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  process.exit(0);
+    console.log(`
+    ========================================
+    🚀 Server is running!
+    📍 URL: http://localhost:${PORT}
+    📊 Health Check: http://localhost:${PORT}/health
+    🔑 API Test: http://localhost:${PORT}/api/test
+    ========================================
+    `);
+    
+    if (!process.env.YOUTUBE_API_KEY) {
+        console.warn('⚠️  WARNING: YouTube API Key not found in .env file!');
+        console.warn('⚠️  Please add YOUTUBE_API_KEY=your_key_here to .env file');
+    } else {
+        console.log('✅ YouTube API Key is configured');
+    }
 });

@@ -1,31 +1,28 @@
 {
   "name": "youtube-search-app",
-  "version": "2.0.0",
-  "description": "Advanced YouTube video search application with social features",
+  "version": "1.0.0",
+  "description": "YouTube Video Search Application for PAC Academic Center",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node -e \"console.log('Testing API Key...'); require('dotenv').config(); console.log(process.env.YOUTUBE_API_KEY ? '✅ API Key found' : '❌ API Key not found');\""
   },
   "keywords": [
     "youtube",
     "search",
-    "video",
-    "nodejs",
-    "express"
+    "api",
+    "pac-academic-center"
   ],
-  "author": "Your Name",
+  "author": "",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "axios": "^1.6.7",
-    "dotenv": "^16.3.1"
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
-  },
-  "engines": {
-    "node": ">=14.0.0"
   }
 }
