@@ -1,93 +1,479 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ค้นหาคลิป YouTube Channel</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ค้นหาคลิป YouTube - PAC Academic Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header .subtitle {
+            font-size: 18px;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .video-icon {
+            font-size: 50px;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            animation: slideUp 0.6s ease;
+        }
+
+        .channel-name {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input[type="text"]::placeholder {
+            color: #999;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .search-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .search-btn:active {
+            transform: translateY(0);
+        }
+
+        .results-container {
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 40px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .results-info {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .video-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+        }
+
+        .video-info {
+            padding: 15px;
+        }
+
+        .video-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        .video-channel {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .video-meta {
+            color: #999;
+            font-size: 13px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .page-btn {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 36px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-container {
+                padding: 30px 20px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header Section -->
     <div class="header">
-      <h1>🎬 ค้นหาคลิป YouTube</h1>
-      <p class="subtitle">ค้นหาวิดีโอในช่อง YouTube ด้วยคีย์เวิร์ดที่คุณต้องการ</p>
+        <h1>
+            <span class="video-icon">🎬</span>
+            ค้นหาคลิป YouTube
+        </h1>
+        <p class="subtitle">ค้นหาวิดีโอในช่อง YouTube ด้วยคีย์เวิร์ดที่คุณต้องการ</p>
     </div>
 
-    <!-- Search Section -->
-    <div class="search-section">
-      <form id="searchForm" class="search-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="searchType">ประเภทการค้นหา:</label>
-            <select id="searchType">
-                <option value="channelId">Channel ID</option>
-              <option value="channelName">UCmi-SqNGuFt2le7YbqQ9cgQ</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="channelInput">ช่อง YouTube:</label>
-            <input type="text" id="channelInput" placeholder="กรอก Channel ID หรือชื่อช่อง" required>
-          </div>
-        </div>
+    <div class="search-container">
+        <div class="channel-name">PAC Academic Center</div>
         
-        <div class="form-row">
-          <div class="form-group">
-            <label for="keyword">คีย์เวิร์ดที่ต้องการค้นหา:</label>
-            <input type="text" id="keyword" placeholder="เช่น: tutorial, review, gameplay" required>
-          </div>
-          <div class="form-group">
-            <label for="maxResults">จำนวนผลลัพธ์:</label>
-            <select id="maxResults">
-              <option value="10">10 วิดีโอ</option>
-              <option value="25">25 วิดีโอ</option>
-              <option value="50">50 วิดีโอ</option>
-            </select>
-          </div>
-        </div>
+        <form id="searchForm">
+            <div class="form-group">
+                <label for="keyword">คีย์เวิร์ดที่ต้องการค้นหา:</label>
+                <input type="text" id="keyword" name="keyword" placeholder="เช่น: tutorial, review, gameplay" required>
+            </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="order">เรียงลำดับตาม:</label>
-            <select id="order">
-              <option value="relevance">ความเกี่ยวข้อง</option>
-              <option value="date">วันที่อัปโหลด</option>
-              <option value="viewCount">จำนวนการดู</option>
-              <option value="rating">คะแนน</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="publishedAfter">อัปโหลดหลังจาก:</label>
-            <input type="date" id="publishedAfter">
-          </div>
-        </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="maxResults">จำนวนผลลัพธ์:</label>
+                    <select id="maxResults" name="maxResults">
+                        <option value="10">10 วิดีโอ</option>
+                        <option value="25">25 วิดีโอ</option>
+                        <option value="50">50 วิดีโอ</option>
+                    </select>
+                </div>
 
-        <button type="submit" class="search-btn">🔍 ค้นหาวิดีโอ</button>
-      </form>
+                <div class="form-group">
+                    <label for="order">เรียงลำดับตาม:</label>
+                    <select id="order" name="order">
+                        <option value="relevance">ความเกี่ยวข้อง</option>
+                        <option value="date">วันที่อัปโหลด</option>
+                        <option value="viewCount">จำนวนการดู</option>
+                        <option value="rating">คะแนน</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="publishedAfter">อัปโหลดหลังจาก:</label>
+                <input type="date" id="publishedAfter" name="publishedAfter">
+            </div>
+
+            <button type="submit" class="search-btn">
+                🔍 ค้นหาวิดีโอ
+            </button>
+        </form>
     </div>
 
-    <!-- Results Section -->
-    <div id="resultsSection" class="results-section" style="display: none;">
-      <div class="results-header">
-        <h2>ผลการค้นหา</h2>
-        <div class="results-count" id="resultsCount"></div>
-      </div>
-      <div id="results" class="video-grid"></div>
-      <div id="pagination" class="pagination"></div>
-    </div>
+    <div id="results" class="results-container"></div>
 
-    <!-- Loading State -->
-    <div id="loading" class="loading" style="display: none;">
-      กำลังค้นหาวิดีโอ...
-    </div>
+    <script>
+        // Configuration
+        const CONFIG = {
+            CHANNEL_ID: 'UCmi-SqNGuFt2le7YbqQ9cgQ', // PAC Academic Center Channel ID
+            API_ENDPOINT: '/api/search'
+        };
 
-    <!-- Error Message -->
-    <div id="errorMessage" class="error-message" style="display: none;"></div>
-  </div>
+        let currentPageToken = '';
+        let nextPageToken = '';
+        let prevPageToken = '';
 
-  <script src="app.js"></script>
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await searchVideos();
+        });
+
+        async function searchVideos(pageToken = '') {
+            const keyword = document.getElementById('keyword').value;
+            const maxResults = document.getElementById('maxResults').value;
+            const order = document.getElementById('order').value;
+            const publishedAfter = document.getElementById('publishedAfter').value;
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div>กำลังค้นหาวิดีโอ...</div>';
+
+            try {
+                const response = await fetch(CONFIG.API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        searchType: 'channelId',
+                        channelInput: CONFIG.CHANNEL_ID,
+                        keyword: keyword,
+                        maxResults: parseInt(maxResults),
+                        order: order,
+                        publishedAfter: publishedAfter || undefined,
+                        pageToken: pageToken
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch videos');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+                
+                nextPageToken = data.nextPageToken || '';
+                prevPageToken = data.prevPageToken || '';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; color: white; padding: 40px;">
+                        <h3>เกิดข้อผิดพลาด</h3>
+                        <p>${error.message}</p>
+                        <p style="margin-top: 10px; opacity: 0.8;">กรุณาตรวจสอบการเชื่อมต่อและลองใหม่อีกครั้ง</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (!data.items || data.items.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; color: white; padding: 40px;">
+                        <h3>ไม่พบวิดีโอ</h3>
+                        <p>ลองเปลี่ยนคีย์เวิร์ดหรือตัวกรองการค้นหา</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="results-info">
+                    <span>พบวิดีโอทั้งหมด ${data.pageInfo?.totalResults || data.items.length} รายการ</span>
+                    <span>แสดง ${data.items.length} รายการ</span>
+                </div>
+                <div class="video-grid">
+            `;
+
+            data.items.forEach(item => {
+                const videoId = typeof item.id === 'object' ? item.id.videoId : item.id;
+                const thumbnail = item.snippet.thumbnails.medium.url;
+                const title = item.snippet.title;
+                const channelTitle = item.snippet.channelTitle;
+                const publishedAt = new Date(item.snippet.publishedAt).toLocaleDateString('th-TH');
+                
+                html += `
+                    <div class="video-card" onclick="window.open('https://www.youtube.com/watch?v=${videoId}', '_blank')">
+                        <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
+                        <div class="video-info">
+                            <div class="video-title">${title}</div>
+                            <div class="video-channel">${channelTitle}</div>
+                            <div class="video-meta">
+                                <span>📅 ${publishedAt}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            // Add pagination
+            if (nextPageToken || prevPageToken) {
+                html += '<div class="pagination">';
+                if (prevPageToken) {
+                    html += `<button class="page-btn" onclick="searchVideos('${prevPageToken}')">← หน้าก่อน</button>`;
+                }
+                if (nextPageToken) {
+                    html += `<button class="page-btn" onclick="searchVideos('${nextPageToken}')">หน้าถัดไป →</button>`;
+                }
+                html += '</div>';
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // Format number with commas
+        function formatNumber(num) {
+            return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0';
+        }
+    </script>
 </body>
 </html>
