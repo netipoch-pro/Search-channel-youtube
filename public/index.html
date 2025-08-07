@@ -541,60 +541,6 @@
         if (searchQuery) {
             document.getElementById('keyword').value = searchQuery;
         }
-
-        // Form submission handling (mock)
-        document.getElementById('searchForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const keyword = document.getElementById('keyword').value;
-            const maxResults = document.getElementById('maxResults').value;
-            const order = document.getElementById('order').value;
-            const publishedAfter = document.getElementById('publishedAfter').value;
-            
-            // Show loading state
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <div class="loading-text">กำลังค้นหาวิดีโอ...</div>
-                </div>
-            `;
-            
-            // Simulate API call
-            setTimeout(() => {
-                // This would be replaced with actual API call results
-                resultsContainer.innerHTML = `
-                    <div class="results-info">
-                        <span>พบวิดีโอทั้งหมด ${maxResults} รายการ สำหรับ "${keyword}"</span>
-                        <span>เรียงตาม: ${order === 'relevance' ? 'ความเกี่ยวข้อง' : order === 'date' ? 'วันที่อัปโหลด' : order === 'viewCount' ? 'จำนวนการดู' : 'คะแนน'}</span>
-                    </div>
-                    <div class="video-grid">
-                        <!-- Video cards would be dynamically generated here -->
-                        <div class="video-card">
-                            <img src="https://via.placeholder.com/320x180/8b5cf6/ffffff?text=Video+1" alt="Video thumbnail" class="video-thumbnail">
-                            <div class="video-info">
-                                <div class="video-title">ตัวอย่างวิดีโอที่ 1: ${keyword}</div>
-                                <div class="video-meta">1.2K views • 2 days ago</div>
-                            </div>
-                        </div>
-                        <div class="video-card">
-                            <img src="https://via.placeholder.com/320x180/7c3aed/ffffff?text=Video+2" alt="Video thumbnail" class="video-thumbnail">
-                            <div class="video-info">
-                                <div class="video-title">ตัวอย่างวิดีโอที่ 2: ${keyword}</div>
-                                <div class="video-meta">856 views • 5 days ago</div>
-                            </div>
-                        </div>
-                        <div class="video-card">
-                            <img src="https://via.placeholder.com/320x180/6d28d9/ffffff?text=Video+3" alt="Video thumbnail" class="video-thumbnail">
-                            <div class="video-info">
-                                <div class="video-title">ตัวอย่างวิดีโอที่ 3: ${keyword}</div>
-                                <div class="video-meta">2.5K views • 1 week ago</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }, 1500);
-        });
     </script>
 </body>
 </html>
