@@ -5,18 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ค้นหาคลิป YouTube - PAC Academic Center</title>
     
-    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#667eea">
     <meta name="description" content="ค้นหาวิดีโอ YouTube จากช่อง PAC Academic Center">
     <link rel="manifest" href="/manifest.json">
     
-    <!-- iOS PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="PAC YouTube">
     <link rel="apple-touch-icon" href="/icon-192.png">
     
-    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icon-192.png">
     
     <style>
@@ -137,7 +134,8 @@
 
         input[type="text"],
         input[type="date"],
-        select {
+        select,
+        .channel-button { /* Added channel-button for styling */
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
@@ -145,11 +143,20 @@
             font-size: 16px;
             transition: all 0.3s ease;
             font-family: inherit;
+            background-color: #fff;
+            color: #333;
+            text-align: left;
         }
+
+        .channel-button { /* Style for the new button */
+             cursor: pointer;
+        }
+
 
         input[type="text"]:focus,
         input[type="date"]:focus,
-        select:focus {
+        select:focus,
+        .channel-button:hover { /* Added hover effect for the button */
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -318,12 +325,10 @@
     </style>
 </head>
 <body>
-    <!-- Offline Notice -->
     <div id="offlineNotice" class="offline-notice">
         ⚠️ คุณกำลังออฟไลน์ - บางฟังก์ชันอาจไม่สามารถใช้งานได้
     </div>
 
-    <!-- Install Banner -->
     <div id="installBanner" class="install-banner">
         <span>📱 ติดตั้งแอปบนอุปกรณ์ของคุณ</span>
         <button id="installBtn" class="install-btn">ติดตั้ง</button>
@@ -367,12 +372,16 @@
                     </select>
                 </div>
             </div>
-
-            <div class="form-group">
-                <label for="publishedAfter">อัปโหลดหลังจาก:</label>
-                <input type="date" id="publishedAfter" name="publishedAfter">
-            </div>
-
+           <div class="form-row">
+               <div class="form-group">
+                   <label for="publishedAfter">อัปโหลดหลังจาก:</label>
+                   <input type="date" id="publishedAfter" name="publishedAfter" value="2024-08-07">
+               </div>
+           <div class="form-group">
+        <label>&nbsp;</label> <a href="https://www.example.com" class="channel-button" style="text-decoration: none;">Global Innovation & Technology</a>
+    </div>
+        </div>
+            
             <button type="submit" class="search-btn">
                 🔍 ค้นหาวิดีโอ
             </button>
